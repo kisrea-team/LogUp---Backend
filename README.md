@@ -1,54 +1,48 @@
-# Project Updates Backend API
+# ⚡ Python Starter Function
 
-This is the backend API for the Project Updates application, built with FastAPI and Python.
+A simple starter function. Edit `src/main.py` to get started and create something awesome! 🚀
 
-## Features
+## 🧰 Usage
 
-- Project management (CRUD operations)
-- Version management (CRUD operations)
-- MySQL database integration
-- RESTful API endpoints
+### GET /ping
 
-## API Endpoints
+- Returns a "Pong" message.
 
-### Projects
-- `GET /projects` - Get all projects
-- `GET /projects/{project_id}` - Get a specific project
-- `POST /projects` - Create a new project
-- `DELETE /projects/{project_id}` - Delete a project
+**Response**
 
-### Versions
-- `POST /versions` - Create a new version
-- `PUT /versions/{version_id}` - Update a version
-- `DELETE /versions/{version_id}` - Delete a version
+Sample `200` Response:
 
-## Setup
+```text
+Pong
+```
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### GET, POST, PUT, PATCH, DELETE /
 
-2. Set environment variables:
-   ```bash
-   DB_HOST=your-database-host
-   DB_PORT=3306
-   DB_USER=your-database-username
-   DB_PASSWORD=your-database-password
-   DB_NAME=project_updates
-   ```
+- Returns a "Learn More" JSON response.
 
-3. Start the server:
-   ```bash
-   python start.py
-   ```
+**Response**
 
-## Deployment
+Sample `200` Response:
 
-This backend can be deployed to platforms that support Python applications:
-- Railway
-- Render
-- Heroku
-- DigitalOcean App Platform
-- AWS Elastic Beanstalk
-- Google Cloud Run
+```json
+{
+  "motto": "Build like a team of hundreds_",
+  "learn": "https://appwrite.io/docs",
+  "connect": "https://appwrite.io/discord",
+  "getInspired": "https://builtwith.appwrite.io"
+}
+```
+
+## ⚙️ Configuration
+
+| Setting           | Value                             |
+| ----------------- | --------------------------------- |
+| Runtime           | Python (3.9)                      |
+| Entrypoint        | `src/main.py`                     |
+| Build Commands    | `pip install -r requirements.txt` |
+| Permissions       | `any`                             |
+| Timeout (Seconds) | 15                                |
+
+## 🔒 Environment Variables
+
+No environment variables required.

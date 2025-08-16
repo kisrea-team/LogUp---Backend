@@ -11,7 +11,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Next.js default port
-        "https://log-9uvsuizai-zitons-projects.vercel.app"
+        "https://log-up-wine.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

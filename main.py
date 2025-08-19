@@ -132,10 +132,19 @@ async def create_project(project: ProjectCreate):
             (project.icon, project.name, project.latest_version, project.latest_update_time)
         )
         
-        if project_id:
-            return await get_project(project_id)
+        # Check if insertion was successful
+        if project_id is not None:
+            # For MySQL, lastrowid might be 0, so we need to fetch the actual ID
+            # Let's get the last inserted ID explicitly
+            last_id_query = "SELECT LAST_INSERT_ID() as id"
+            last_id_result = db.execute_query(last_id_query)
+            actual_project_id = last_id_result[0]['id'] if last_id_result else project_id
+            
+            return await get_project(actual_project_id)
         else:
             raise HTTPException(status_code=500, detail="Failed to create project")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating project: {str(e)}")
 
@@ -158,7 +167,14 @@ async def create_version(version: VersionCreate):
             (version.project_id, version.version, version.update_time, version.content, version.download_url)
         )
         
-        if version_id:
+        # Check if insertion was successful
+        if version_id is not None:
+            # For MySQL, lastrowid might be 0, so we need to fetch the actual ID
+            # Let's get the last inserted ID explicitly
+            last_id_query = "SELECT LAST_INSERT_ID() as id"
+            last_id_result = db.execute_query(last_id_query)
+            actual_version_id = last_id_result[0]['id'] if last_id_result else version_id
+            
             # Update project's latest version if this is newer
             update_project_query = """
             UPDATE projects 
@@ -176,7 +192,7 @@ async def create_version(version: VersionCreate):
             FROM versions 
             WHERE id = %s
             """
-            version_data = db.execute_query(version_query, (version_id,))
+            version_data = db.execute_query(version_query, (actual_version_id,))
             
             return Version(**version_data[0])
         else:

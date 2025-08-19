@@ -11,7 +11,7 @@ class Database:
         self.port = int(os.getenv('DB_PORT', 3306))
         self.user = os.getenv('DB_USER', 'root')
         self.password = os.getenv('DB_PASSWORD', 'mysql_Ki48fA')
-        self.database = os.getenv('DB_NAME', 'project_updates')
+        self.database = os.getenv('DB_NAME', 'logup')
         self.connection = None
 
     def connect(self):

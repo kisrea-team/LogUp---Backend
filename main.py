@@ -101,7 +101,7 @@ async def get_project(project_id: int):
     try:
         # Get project (include unpublished for now)
         project_query = """
-        SELECT id, icon, name, latest_version, latest_update_time, describe, summar, author, type 
+        SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
         FROM projects 
         WHERE id = %s
         """
@@ -143,7 +143,7 @@ async def create_project(project: ProjectCreate):
             raise HTTPException(status_code=500, detail="Failed to connect to database")
         
         insert_query = """
-        INSERT INTO projects (icon, name, latest_version, latest_update_time, describe, summar, author, type) 
+        INSERT INTO projects (icon, name, latest_version, latest_update_time, `describe`, summar, author, type) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         project_id = local_db.execute_query(
@@ -161,7 +161,7 @@ async def create_project(project: ProjectCreate):
             
             # Get the created project
             project_query = """
-            SELECT id, icon, name, latest_version, latest_update_time, describe, summar, author, type 
+            SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
             FROM projects 
             WHERE id = %s
             """
@@ -329,7 +329,7 @@ async def update_project(project_id: int, project: ProjectCreate):
         update_query = """
         UPDATE projects 
         SET icon = %s, name = %s, latest_version = %s, latest_update_time = %s, 
-            describe = %s, summar = %s, author = %s, type = %s 
+            `describe` = %s, summar = %s, author = %s, type = %s 
         WHERE id = %s
         """
         local_db.execute_query(
@@ -340,7 +340,7 @@ async def update_project(project_id: int, project: ProjectCreate):
         
         # Get the updated project
         project_query = """
-        SELECT id, icon, name, latest_version, latest_update_time, describe, summar, author, type 
+        SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
         FROM projects 
         WHERE id = %s
         """

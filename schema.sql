@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS versions (
 );
 
 -- Insert sample data
-INSERT INTO projects (icon, name, latest_version, latest_update_time, describe, summar, author, type) VALUES
+INSERT INTO projects (icon, name, latest_version, latest_update_time, `describe`, summar, author, type) VALUES
 ('🚀', 'Project Alpha', 'v2.1.0', '2024-01-15', '一个功能强大的项目管理工具，提供全面的项目跟踪和协作功能。', '高效的项目管理解决方案', 'Alpha Team', '工具'),
 ('⚡', 'Project Beta', 'v1.5.2', '2024-01-12', '快速响应的前端框架，专注于性能优化和用户体验。', '极速前端开发框架', 'Beta Corp', '框架'),
 ('🔧', 'Project Gamma', 'v3.0.1', '2024-01-14', '灵活的后端服务，支持多种数据库和微服务架构。', '多功能后端服务平台', 'Gamma Labs', '服务');

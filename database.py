@@ -16,6 +16,7 @@ class Database:
 
     def connect(self):
         try:
+            print(f"Connecting to MySQL database: {self.host}:{self.port}, user: {self.user}, database: {self.database}")
             self.connection = mysql.connector.connect(
                 host=self.host,
                 port=self.port,
@@ -27,6 +28,7 @@ class Database:
                 use_unicode=True,
                 ssl_disabled=True  # Disable SSL to avoid connection issues
             )
+            print("Database connection successful")
             return self.connection
         except Error as e:
             print(f"Error connecting to MySQL: {e}")
@@ -47,10 +49,14 @@ class Database:
     def execute_query(self, query, params=None):
         cursor = None
         try:
+            print(f"Executing query: {query}")
+            if params:
+                print(f"Query params: {params}")
             cursor = self.connection.cursor(dictionary=True, buffered=True)
             cursor.execute(query, params)
             if query.strip().upper().startswith('SELECT'):
                 result = cursor.fetchall()
+                print(f"Query result: {len(result) if result else 0} rows")
                 # Ensure we consume all results
                 while cursor.nextset():
                     pass

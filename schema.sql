@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS project_updates;
-USE project_updates;
+CREATE DATABASE IF NOT EXISTS logup;
+USE logup;
 
 -- Create projects table
 CREATE TABLE IF NOT EXISTS projects (
@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS projects (
     name VARCHAR(255) NOT NULL,
     latest_version VARCHAR(50) NOT NULL,
     latest_update_time DATE NOT NULL,
+    describe TEXT,
+    summar VARCHAR(255),
+    author VARCHAR(100),
+    type VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -28,10 +32,10 @@ CREATE TABLE IF NOT EXISTS versions (
 );
 
 -- Insert sample data
-INSERT INTO projects (icon, name, latest_version, latest_update_time) VALUES
-('🚀', 'Project Alpha', 'v2.1.0', '2024-01-15'),
-('⚡', 'Project Beta', 'v1.5.2', '2024-01-12'),
-('🔧', 'Project Gamma', 'v3.0.1', '2024-01-14');
+INSERT INTO projects (icon, name, latest_version, latest_update_time, describe, summar, author, type) VALUES
+('🚀', 'Project Alpha', 'v2.1.0', '2024-01-15', '一个功能强大的项目管理工具，提供全面的项目跟踪和协作功能。', '高效的项目管理解决方案', 'Alpha Team', '工具'),
+('⚡', 'Project Beta', 'v1.5.2', '2024-01-12', '快速响应的前端框架，专注于性能优化和用户体验。', '极速前端开发框架', 'Beta Corp', '框架'),
+('🔧', 'Project Gamma', 'v3.0.1', '2024-01-14', '灵活的后端服务，支持多种数据库和微服务架构。', '多功能后端服务平台', 'Gamma Labs', '服务');
 
 -- Insert sample versions for Project Alpha (id=1)
 INSERT INTO versions (project_id, version, update_time, content, download_url) VALUES

@@ -49,7 +49,7 @@ async def get_projects():
         
         # Get all projects (include unpublished for now)
         projects_query = """
-        SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
+        SELECT id, icon, name, slug, latest_version, latest_update_time, `describe`, summar, author, type 
         FROM projects 
         ORDER BY latest_update_time DESC
         """
@@ -95,20 +95,38 @@ async def get_projects():
         if local_db:
             local_db.disconnect()
 
-@app.get("/projects/{project_id}", response_model=Project)
-async def get_project(project_id: int):
-    """获取单个项目详情"""
+@app.get("/projects/{project_id_or_slug}", response_model=Project)
+async def get_project(project_id_or_slug: str):
+    """获取单个项目详情 - 支持ID或slug"""
+    local_db = None
     try:
+        # Create new database connection for this request
+        local_db = db.__class__()
+        if not local_db.connect():
+            raise HTTPException(status_code=500, detail="Failed to connect to database")
+        
+        # Try to parse as integer first (ID)
+        try:
+            project_id = int(project_id_or_slug)
+            where_condition = "id = %s"
+            where_param = project_id
+        except ValueError:
+            # If not integer, treat as slug
+            where_condition = "slug = %s"
+            where_param = project_id_or_slug
+        
         # Get project (include unpublished for now)
-        project_query = """
-        SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
+        project_query = f"""
+        SELECT id, icon, name, slug, latest_version, latest_update_time, `describe`, summar, author, type 
         FROM projects 
-        WHERE id = %s
+        WHERE {where_condition}
         """
-        project_data = db.execute_query(project_query, (project_id,))
+        project_data = local_db.execute_query(project_query, (where_param,))
         
         if not project_data:
             raise HTTPException(status_code=404, detail="Project not found")
+        
+        project_id = project_data[0]['id']
         
         # Get versions (include unpublished for now)
         versions_query = """
@@ -117,7 +135,7 @@ async def get_project(project_id: int):
         WHERE project_id = %s 
         ORDER BY update_time DESC
         """
-        versions_data = db.execute_query(versions_query, (project_id,))
+        versions_data = local_db.execute_query(versions_query, (project_id,))
         
         versions = [Version(**version) for version in versions_data] if versions_data else []
         
@@ -130,7 +148,14 @@ async def get_project(project_id: int):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error in get_project: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error fetching project: {str(e)}")
+    finally:
+        # Ensure database connection is closed
+        if local_db:
+            local_db.disconnect()
 
 @app.post("/projects", response_model=Project)
 async def create_project(project: ProjectCreate):
@@ -142,13 +167,36 @@ async def create_project(project: ProjectCreate):
         if not local_db.connect():
             raise HTTPException(status_code=500, detail="Failed to connect to database")
         
+        # Generate slug if not provided
+        import re
+        if not project.slug:
+            # Convert name to slug: lowercase, replace spaces with hyphens, remove special chars
+            slug = re.sub(r'[^a-zA-Z0-9\u4e00-\u9fa5\s-]', '', project.name)
+            slug = re.sub(r'[\s]+', '-', slug)
+            slug = slug.lower()
+            
+            # Check if slug already exists
+            existing = local_db.execute_query("SELECT id FROM projects WHERE slug = %s", (slug,))
+            if existing:
+                # Append random string if slug exists
+                import random
+                import string
+                random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+                slug = f"{slug}-{random_suffix}"
+        else:
+            slug = project.slug
+            # Check if provided slug already exists
+            existing = local_db.execute_query("SELECT id FROM projects WHERE slug = %s", (slug,))
+            if existing:
+                raise HTTPException(status_code=400, detail="Slug already exists")
+        
         insert_query = """
-        INSERT INTO projects (icon, name, latest_version, latest_update_time, `describe`, summar, author, type) 
+        INSERT INTO projects (icon, name, slug, latest_version, latest_update_time, `describe`, summar, author, type) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         project_id = local_db.execute_query(
             insert_query, 
-            (project.icon, project.name, project.latest_version, project.latest_update_time, project.describe, project.summar, project.author, project.type)
+            (project.icon, project.name, slug, project.latest_version, project.latest_update_time, project.describe, project.summar, project.author, project.type)
         )
         
         # Check if insertion was successful
@@ -161,7 +209,7 @@ async def create_project(project: ProjectCreate):
             
             # Get the created project
             project_query = """
-            SELECT id, icon, name, latest_version, latest_update_time, `describe`, summar, author, type 
+            SELECT id, icon, name, slug, latest_version, latest_update_time, `describe`, summar, author, type 
             FROM projects 
             WHERE id = %s
             """

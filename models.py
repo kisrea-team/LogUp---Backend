@@ -16,6 +16,7 @@ class Project(BaseModel):
     id: Optional[int] = None
     icon: str
     name: str
+    slug: Optional[str] = None
     latest_version: str
     latest_update_time: date_type
     describe: Optional[str] = None
@@ -27,6 +28,7 @@ class Project(BaseModel):
 class ProjectCreate(BaseModel):
     icon: str
     name: str
+    slug: Optional[str] = None
     latest_version: str
     latest_update_time: date_type
     describe: Optional[str] = None

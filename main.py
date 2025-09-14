@@ -97,21 +97,10 @@ async def get_projects(
         
         projects = []
         for project_data in projects_data:
-            # Get versions for each project (include unpublished for now)
-            versions_query = """
-            SELECT id, project_id, version, update_time, content, download_url 
-            FROM versions 
-            WHERE project_id = %s 
-            ORDER BY update_time DESC
-            """
-            versions_data = local_db.execute_query(versions_query, (project_data['id'],))
-            print(f"Project {project_data['id']} has {len(versions_data) if versions_data else 0} versions")
-            
-            versions = [Version(**version) for version in versions_data] if versions_data else []
-            
+            # 不预加载版本数据，只返回项目基本信息
             project = Project(
                 **project_data,
-                versions=versions
+                versions=[]  # 返回空数组，版本数据通过单独API获取
             )
             projects.append(project)
         
@@ -457,6 +446,45 @@ async def update_project(project_id: int, project: ProjectCreate):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error updating project: {str(e)}")
+    finally:
+        # Ensure database connection is closed
+        if local_db:
+            local_db.disconnect()
+
+@app.get("/projects/{project_id}/versions", response_model=List[Version])
+async def get_project_versions(project_id: int):
+    """获取特定项目的版本列表"""
+    local_db = None
+    try:
+        # Create new database connection for this request
+        local_db = db.__class__()
+        if not local_db.connect():
+            raise HTTPException(status_code=500, detail="Failed to connect to database")
+
+        # Check if project exists
+        project_check = local_db.execute_query("SELECT id FROM projects WHERE id = %s", (project_id,))
+        if not project_check:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Get versions for the project
+        versions_query = """
+        SELECT id, project_id, version, update_time, content, download_url
+        FROM versions
+        WHERE project_id = %s
+        ORDER BY update_time DESC
+        """
+        versions_data = local_db.execute_query(versions_query, (project_id,))
+
+        versions = [Version(**version) for version in versions_data] if versions_data else []
+
+        return versions
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_project_versions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error getting project versions: {str(e)}")
     finally:
         # Ensure database connection is closed
         if local_db:

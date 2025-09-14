@@ -1,9 +1,17 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Optional
 from models import Project, ProjectCreate, Version, VersionCreate
 from database import db
 from datetime import date
+from pydantic import BaseModel
+
+class PaginatedResponse(BaseModel):
+    data: List[Project]
+    total: int
+    page: int
+    per_page: int
+    total_pages: int
 
 app = FastAPI(title="Project Updates API", version="1.0.0")
 
@@ -34,26 +42,50 @@ async def shutdown_event():
 async def root():
     return {"message": "Project Updates API"}
 
-@app.get("/projects", response_model=List[Project])
-async def get_projects():
-    """获取所有项目列表"""
+@app.get("/projects", response_model=PaginatedResponse)
+async def get_projects(
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    """获取项目列表（支持分页）"""
     local_db = None
     try:
         # Create new database connection for this request
         local_db = db.__class__()
         if not local_db.connect():
             print("Failed to connect to database")
-            return []
+            return PaginatedResponse(data=[], total=0, page=page, per_page=per_page, total_pages=0)
         
         print("Database connected successfully")
         
-        # Get all projects (include unpublished for now)
+        # Calculate offset for pagination
+        # Using offset-based pagination which works well for moderate datasets
+        # For very large datasets, consider cursor-based pagination
+        offset = (page - 1) * per_page
+        
+        # Get total count of projects for pagination metadata
+        # Note: For better performance with very large datasets, 
+        # consider caching this count or using approximate counts
+        count_query = "SELECT COUNT(*) as total FROM projects"
+        count_result = local_db.execute_query(count_query)
+        total = count_result[0]['total'] if count_result else 0
+        total_pages = (total + per_page - 1) // per_page  # Ceiling division
+        
+        # Validate page number to prevent empty pages
+        if page > total_pages and total_pages > 0:
+            page = total_pages
+        elif page < 1:
+            page = 1
+        
+        # Get paginated projects using LIMIT and OFFSET for efficient querying
+        # The ORDER BY ensures consistent pagination across requests
         projects_query = """
         SELECT id, icon, name, slug, latest_version, latest_update_time, `describe`, summar, author, type 
         FROM projects 
         ORDER BY latest_update_time DESC
+        LIMIT %s OFFSET %s
         """
-        projects_data = local_db.execute_query(projects_query)
+        projects_data = local_db.execute_query(projects_query, (per_page, offset))
         print(f"Number of projects found: {len(projects_data) if projects_data else 0}")
         
         if projects_data:
@@ -61,7 +93,7 @@ async def get_projects():
         
         if not projects_data:
             print("No projects data found")
-            return []
+            return PaginatedResponse(data=[], total=total, page=page, per_page=per_page, total_pages=total_pages)
         
         projects = []
         for project_data in projects_data:
@@ -83,13 +115,19 @@ async def get_projects():
             )
             projects.append(project)
         
-        print(f"Returning {len(projects)} projects")
-        return projects
+        print(f"Returning {len(projects)} projects (page {page} of {total_pages})")
+        return PaginatedResponse(
+            data=projects,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages
+        )
     except Exception as e:
         print(f"Error in get_projects: {e}")
         import traceback
         traceback.print_exc()
-        return []
+        return PaginatedResponse(data=[], total=0, page=page, per_page=per_page, total_pages=0)
     finally:
         # Ensure database connection is closed
         if local_db:
